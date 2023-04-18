@@ -17,5 +17,6 @@
             - level 5, take any skin move
             - level 6, take your final place
 strings + descriptions of strings
+    - lists strings
     - give strings
     - pull strings
