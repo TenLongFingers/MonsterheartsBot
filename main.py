@@ -13,6 +13,11 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
+exclamations = [
+  "WOW!", "HOLY SH*T!", "F*CK YEAH!", "HOT DAMN!", "ya-YEET!", "POG!", "(⊙０⊙)",
+  "ᕦ༼ ˵ ◯ ਊ ◯ ˵ ༽ᕤ"
+]
+
 
 # Check to see if the bot is logged in. Developer use only
 @client.event
@@ -42,10 +47,19 @@ async def on_message(message):
       "Hello, world! This will eventually be updated with instructions on how to get instructions!"
     )
 
+  #Rolls a simple 2d6
   if msg.startswith("!roll"):
     total, dice_1, dice_2 = await roll_dice()
-    await message.channel.send("You rolled " + str(dice_1) + " and " +
-                               str(dice_2) + " for a total of " + str(total))
+    result = "You rolled " + str(dice_1) + " and " + str(
+      dice_2) + " for a total of " + str(total)
+    # Messages for different rolls
+    if total == 2:
+      result = ("(ಥ_ʖಥ)... ") + result + ("! FAIL!")
+    elif 3 <= total <= 6:
+      result = ("FAIL! ") + result + (".")
+    elif 7 <= total <= 9:
+      result = ("Success! " + result + ("."))
+    await message.channel.send(result)
 
 
 client.run(os.getenv('TOKEN'))
