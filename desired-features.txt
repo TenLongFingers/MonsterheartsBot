@@ -1,0 +1,21 @@
+* = priority
+~ = add later
+
+
+*2d6 dice rolls
+*character names and stats
+    - Hot
+    - Cold
+    - Volatile
+    - Dark
+   ~ - XP (tracks failed rolls)
+        - Tells you when you've leveled up
+            - level 1, asks which stat to +1
+            - level 2, take a skin move
+            - level 3, take a skin move
+            - level 4, take any skin move
+            - level 5, take any skin move
+            - level 6, take your final place
+strings + descriptions of strings
+    - give strings
+    - pull strings
