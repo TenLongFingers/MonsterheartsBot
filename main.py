@@ -2,7 +2,7 @@
 import os
 import discord
 import random
-from sql_functions.database_functions import get_characters_all
+from sql_functions.custom_modules import get_characters, get_character_single
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -62,19 +62,22 @@ async def on_ready():
   print('We have logged in successfully as {0.user}'.format(client))
 
 
-# create new character function
+# create new character function TODO: build a function in the database_functions file so the new character will be inserted into the table
 @client.event
 async def on_message(message):
   if message.author == client.user:
     return
 
-  if message.content.startswith(prefix + "new_character"):
+  #shortens message content
+  msg = message.content.lower()
+
+  if msg.startswith(prefix + "new_character"):
     # parse name, stat, and level arguments
     args = message.content.split()[1:]
     if len(args) != 8:
       await message.channel.send(
-        "Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. Remember not to use comas!"
-      )
+        f"Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. **Remember not to use comas!** \n Note: if you are trying to add a new NPC, use "
+        + prefix + "new_npc")
       return
 
     # Collect arguments TODO: you could probably just map and loop through this, right? Like in javascript?
@@ -102,8 +105,8 @@ async def on_message(message):
     await message.channel.send(character_stat_block)
 
   # Check to make sure the database is connected properly. Dev use only
-  if message.content.startswith(prefix + "get_characters all"):
-    characters = get_characters_all()
+  if message.content.lower().startswith(prefix + "get_characters"):
+    characters = get_characters()
     characters_list = []
     for index, character in characters.iterrows():
       character_info = (
@@ -115,11 +118,14 @@ async def on_message(message):
       characters_list.append(character_info)
     characters_string = "\n".join(characters_list)
 
-    await message.channel.send("List of Characters: \n\n" + characters_string)
+    await message.channel.send("List of Player Characters: \n\n" +
+                               characters_string +
+                               "\n \n (to view npcs, use command " + prefix +
+                               "get_npcs")
 
   # see character's stats function
 
-  # if message.content.startswith(prefix + "view_character"):
+  # if message.content.startswith(prefix + "statblock"):
   #   args = message.content.split()[1:]
   # await message.channel.send(
   #   "See character's stats functions works, but doesn't pull character yet"
