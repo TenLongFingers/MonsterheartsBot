@@ -2,7 +2,7 @@
 import os
 import discord
 import random
-from sql_functions.custom_modules import get_characters, get_character_single
+from custom_modules.database_functions import get_characters, get_character_stats
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -16,7 +16,6 @@ client = discord.Client(intents=intents)
 
 ## VARIABLES ##
 prefix = "!"
-# msg = message.content
 
 exclamations_array = [
   "WOW!", "HOLY SH*T!", "F*CK YEAH!", "HOT DAMN!", "ya-YEET!", "POG!", "(⊙０⊙)",
@@ -73,10 +72,10 @@ async def on_message(message):
 
   if msg.startswith(prefix + "new_character"):
     # parse name, stat, and level arguments
-    args = message.content.split()[1:]
+    args = msg.split()[1:]
     if len(args) != 8:
       await message.channel.send(
-        f"Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. **Remember not to use comas!** \n Note: if you are trying to add a new NPC, use "
+        "Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. **Remember not to use comas!** \n Note: if you are trying to add a new NPC, use "
         + prefix + "new_npc")
       return
 
@@ -104,8 +103,8 @@ async def on_message(message):
     # Send new character as a message
     await message.channel.send(character_stat_block)
 
-  # Check to make sure the database is connected properly. Dev use only
-  if message.content.lower().startswith(prefix + "get_characters"):
+  # Fetches the full list of player characters
+  if msg.startswith(prefix + "get_characters"):
     characters = get_characters()
     characters_list = []
     for index, character in characters.iterrows():
@@ -123,26 +122,31 @@ async def on_message(message):
                                "\n \n (to view npcs, use command " + prefix +
                                "get_npcs")
 
-  # see character's stats function
+  # see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier. TODO: doesn't handle wrong names yet
+  if msg.startswith(prefix + "stat_block"):
+    name = message.content[len(prefix + "stat_block"):].strip()
+    character = get_character_stats(name)
+    character_stats_message = (
+      f"""**{character['first_name'].iloc[0]} {character['last_name'].iloc[0]}** *{character['skin'].iloc[0]}* (level {character['level'].iloc[0]})
+          **Hot:** {character['hot'].iloc[0]}
+          **Cold:** {character['cold'].iloc[0]}
+          **Volatile:** {character['volatile'].iloc[0]}
+          **Dark:** {character['dark'].iloc[0]}""")
 
-  # if message.content.startswith(prefix + "statblock"):
-  #   args = message.content.split()[1:]
-  # await message.channel.send(
-  #   "See character's stats functions works, but doesn't pull character yet"
-  # )
+    await message.channel.send(character_stats_message)
 
   # TODO: reformat this to have instructions
-  if message.content.startswith(prefix + "hello"):
+  if msg.startswith(prefix + "hello"):
     await message.channel.send(
       "Hello, world! This will eventually be updated with instructions on how to get instructions!"
     )
 
-  #Rolling function
+  #Rolling function TODO: these will probably need their own module
 
 
 # Random exclamations for super successes
   exclamation = random.choice(exclamations_array)
-  if message.content.startswith(prefix + "roll"):
+  if msg.startswith(prefix + "roll"):
     total, dice_1, dice_2 = roll_dice()
     result = "You rolled " + str(dice_1) + " and " + str(
       dice_2) + " for a total of " + str(total)

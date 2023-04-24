@@ -4,5 +4,5 @@
 !new_npc = (no function yet)
 !get_characters = get_characters
 !get_npcs = (no function yet)
-!statblock {first_name} = (mocked out but needs to be built in database_functions)
+!statblock {first_name} = get_character_stats
 !roll = partially built under "Rolling function" comment. Doesn't allow for modifiers yet.

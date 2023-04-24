@@ -1,7 +1,8 @@
 import os
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm.exc import NoResultFound
 
 CONNECTION_STRING = os.environ['CONNECTION_STRING']
 
@@ -19,12 +20,18 @@ def get_characters():
   return df
 
 
-def get_character_single(name):
-  sql = f'''
-  SELECT *
-  FROM "characters"
-  WHERE {name} = first_name;
-  '''
-  with engine.connect() as conn:
-    df = pd.read_sql(sql, conn)
-  return df
+#TODO: error message doesn't print. Probably needs to be handled on main, anyway
+def get_character_stats(name):
+  sql = text('''
+    SELECT *
+    FROM "characters"
+    WHERE "first_name" = :name;
+  ''')
+  try:
+    with engine.connect() as conn:
+      df = pd.read_sql(sql, conn, params={'name': name})
+    return df
+  except NoResultFound:
+    print(
+      f"Error: couldn't find {name} in character list. Please check to make sure your spelling is correct."
+    )
