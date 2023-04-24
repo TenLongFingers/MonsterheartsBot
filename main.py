@@ -2,8 +2,7 @@
 import os
 import discord
 import random
-
-my_secret = os.environ['TOKEN']
+from sql_functions.database_functions import get_characters_all
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -15,7 +14,7 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 
-## HANDLER VARIABLES ##
+## VARIABLES ##
 prefix = "!"
 # msg = message.content
 
@@ -24,10 +23,29 @@ exclamations_array = [
   "ᕦ༼ ˵ ◯ ਊ ◯ ˵ ༽ᕤ"
 ]
 
-## HANDLER FUNCTIONS## 
+
+## FUNCTIONS##
+# Dice roller function TODO: add the stats as a callback function. Then you can do an if/elif statements in the roll function, so they can choose whether or not to roll stats
+def roll_dice():
+  dice_1 = random.randint(1, 6)
+  dice_2 = random.randint(1, 6)
+  total = dice_1 + dice_2
+  return total, dice_1, dice_2
+
+
 class Character:
 
-  def __init__(self, first_name, last_name, skin, level, hot, cold, volatile, dark,):
+  def __init__(
+    self,
+    first_name,
+    last_name,
+    skin,
+    level,
+    hot,
+    cold,
+    volatile,
+    dark,
+  ):
     self.first_name = first_name
     self.last_name = last_name
     self.skin = skin
@@ -37,24 +55,14 @@ class Character:
     self.volatile = volatile
     self.dark = dark
 
-# Check to see if the bot is logged in. Developer use only
+
+# Check to see if the bot is logged in. Dev use only
 @client.event
 async def on_ready():
   print('We have logged in successfully as {0.user}'.format(client))
 
 
-
-
-
 # create new character function
-
-# see character's stats function
-
-  # if message.content.startswith(prefix + "view_character"):
-  #   args = message.content.split()[1:]
-  # await message.channel.send(
-  #   "See character's stats functions works, but doesn't pull character yet"
-  # )
 @client.event
 async def on_message(message):
   if message.author == client.user:
@@ -65,23 +73,26 @@ async def on_message(message):
     args = message.content.split()[1:]
     if len(args) != 8:
       await message.channel.send(
-        "Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. Remember not to use comas!")
+        "Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. Remember not to use comas!"
+      )
       return
 
     # Collect arguments TODO: you could probably just map and loop through this, right? Like in javascript?
-    first_name = args[0]
-    last_name = args[1]
-    skin = args[2]
-    level = args[3]
+    first_name = str(args[0])
+    last_name = str(args[1])
+    skin = str(args[2])
+    level = int(args[3])
     hot = int(args[4])
     cold = int(args[5])
     volatile = int(args[6])
     dark = int(args[7])
 
     # Create new character object
-    character = Character(first_name,last_name,skin,level,hot,cold,volatile,dark)
+    character = Character(first_name, last_name, skin, level, hot, cold,
+                          volatile, dark)
 
-    character_stat_block = (f"""**{character.first_name} {character.last_name}** *{character.skin}* (level {character.level})
+    character_stat_block = (
+      f"""**{character.first_name} {character.last_name}** *{character.skin}* (level {character.level})
       **Hot:** {character.hot}
       **Cold:** {character.cold}
       **Volatile:** {character.volatile}
@@ -90,39 +101,55 @@ async def on_message(message):
     # Send new character as a message
     await message.channel.send(character_stat_block)
 
+  # Check to make sure the database is connected properly. Dev use only
+  if message.content.startswith(prefix + "get_characters all"):
+    characters = get_characters_all()
+    characters_list = []
+    for index, character in characters.iterrows():
+      character_info = (
+        f"""**{character.first_name} {character.last_name}** *{character.skin}* (level {character.level})
+          **Hot:** {character.hot}
+          **Cold:** {character.cold}
+          **Volatile:** {character.volatile}
+          **Dark:** {character.dark}\n\n""")
+      characters_list.append(character_info)
+    characters_string = "\n".join(characters_list)
 
-# Dice roller function TODO: add the stats as a callback function. Then you can do an if/elif statements in the roll function, so they can choose whether or not to roll stats
-@client.event
-async def roll_dice():
-  dice_1 = random.randint(1, 6)
-  dice_2 = random.randint(1, 6)
-  total = dice_1 + dice_2
-  return total, dice_1, dice_2
+    await message.channel.send("List of Characters: \n\n" + characters_string)
+
+  # see character's stats function
+
+  # if message.content.startswith(prefix + "view_character"):
+  #   args = message.content.split()[1:]
+  # await message.channel.send(
+  #   "See character's stats functions works, but doesn't pull character yet"
+  # )
+
+  # TODO: reformat this to have instructions
+  if message.content.startswith(prefix + "hello"):
+    await message.channel.send(
+      "Hello, world! This will eventually be updated with instructions on how to get instructions!"
+    )
+
+  #Rolling function
 
 
 # Random exclamations for super successes
   exclamation = random.choice(exclamations_array)
-
-# TODO: reformat this to have instructions
-  if message.content.startswith(prefix + "hello"):
-    await message.channel.send("Hello, world! This will eventually be updated with instructions on how to get instructions!")
-
-  #Rolls a simple 2d6
   if message.content.startswith(prefix + "roll"):
-    total, dice_1, dice_2 = await roll_dice()
+    total, dice_1, dice_2 = roll_dice()
     result = "You rolled " + str(dice_1) + " and " + str(
       dice_2) + " for a total of " + str(total)
-  
+
     # Messages for different rolls TODO: these will probably have to be moved to a different function so people can add stats. It'll have to be restructured.
   if total == 2:
-      result = (":poop: ... ") + result + ("! FAIL!")
+    result = (":poop:  ") + result + ("! FAIL!")
   elif 3 <= total <= 6:
-      result = ("Fail! ") + result + (".")
+    result = ("Fail! ") + result + (".")
   elif 7 <= total <= 9:
-      result = ("Success! ") + result + (".")
+    result = ("Success! ") + result + (".")
   elif total > 9:
-      result = (exclamation + " " + result + ("! SUCCESS!!"))
+    result = (exclamation + " " + result + ("! SUCCESS!!"))
   await message.channel.send(result)
-
 
 client.run(os.getenv('TOKEN'))
