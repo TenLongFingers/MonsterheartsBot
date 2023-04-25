@@ -2,7 +2,7 @@
 import os
 import discord
 import random
-from custom_modules.database_functions import get_characters, get_character_stats
+from custom_modules.database_functions import get_characters, get_character_stats, add_new_character
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -62,32 +62,34 @@ async def on_message(message):
     if len(args) != 8:
       await message.channel.send(
         "Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. **Remember not to use comas!** \n Note: if you are trying to add a new NPC, use "
-        + prefix + "new_npc")
+        + prefix + "new_npc instead.")
       return
-
-    # Collect arguments TODO: you could probably just map and loop through this, right? Like in javascript?
-    first_name = str(args[0])
-    last_name = str(args[1])
-    skin = str(args[2])
-    level = int(args[3])
-    hot = int(args[4])
-    cold = int(args[5])
-    volatile = int(args[6])
-    dark = int(args[7])
-
-    # Create new character object
-    character = Character(first_name, last_name, skin, level, hot, cold,
-                          volatile, dark)
-
-    character_stat_block = (
-      f"""**{character.first_name} {character.last_name}** *{character.skin}* (level {character.level})
-      **Hot:** {character.hot}
-      **Cold:** {character.cold}
-      **Volatile:** {character.volatile}
-      **Dark:** {character.dark}""")
-
-    # Send new character as a message
-    await message.channel.send(character_stat_block)
+      
+    else:
+      # Extract values from args
+      first_name = args[0]
+      last_name = args[1]
+      skin = args[2]
+      level = args[3]
+      hot = args[4]
+      cold = args[5]
+      volatile = args[6]
+      dark = args[7]
+      
+      new_character = {
+    'first_name': first_name,
+    'last_name': last_name,
+    'skin': skin,
+    'level': level,
+    'hot': hot,
+    'cold': cold,
+    'volatile': volatile,
+    'dark': dark
+}
+      add_new_character(new_character)
+      print(new_character)
+      # Send new character as a confirmation message #TODO: actually include stat block
+      await message.channel.send("success!")
 
   # Fetches the full list of player characters
   if msg.startswith(prefix + "get_characters"):
@@ -126,6 +128,7 @@ async def on_message(message):
     await message.channel.send(
       "Hello, world! This will eventually be updated with instructions on how to get instructions!"
     )
+
 
 #Rolling function
 
