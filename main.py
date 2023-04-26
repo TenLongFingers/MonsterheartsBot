@@ -1,7 +1,8 @@
 ## IMPORTS ##
 import os
 import discord
-import random
+from discord.ext import commands
+import string
 from custom_modules.database_functions import get_characters, get_character_stats, add_new_character
 
 ## DISCORD CLIENT INSTANCE ##
@@ -12,10 +13,8 @@ intents.members = True
 intents = discord.Intents.default()
 intents.message_content = True
 
-client = discord.Client(intents=intents)
-
 ## VARIABLES ##
-prefix = "!"
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 
 class Character:
@@ -40,96 +39,82 @@ class Character:
     self.volatile = volatile
     self.dark = dark
 
-
 # Check to see if the bot is logged in. Dev use only
-@client.event
+@bot.event
 async def on_ready():
-  print('We have logged in successfully as {0.user}'.format(client))
+  print('We have logged in successfully as {0.user}'.format(bot))
 
-
-# create new character function TODO: build a function in the database_functions file so the new character will be inserted into the table
-@client.event
-async def on_message(message):
-  if message.author == client.user:
+# create new character function
+@bot.command(name='new_character')
+async def new_character(ctx, first_name, last_name, skin, level, hot, cold, volatile, dark):
+  # Parse name, stat, and level arguments
+  if not all(arg.isdigit() for arg in (level, hot, cold, volatile, dark)):
+    await ctx.send("Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. \n Note: if you are trying to add a new NPC, use " + prefix + "new_npc instead.")
     return
 
-  #shortens message content
-  msg = message.content.lower()
+  first_name = first_name.capitalize()
+  last_name = last_name.capitalize()
+  skin = skin.capitalize()
+  level = int(level)
+  hot = int(hot)
+  cold = int(cold)
+  volatile = int(volatile)
+  dark = int(dark)
 
-  if msg.startswith(prefix + "new_character"):
-    # parse name, stat, and level arguments
-    args = msg.split()[1:]
-    if len(args) != 8:
-      await message.channel.send(
-        "Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. **Remember not to use comas!** \n Note: if you are trying to add a new NPC, use "
-        + prefix + "new_npc instead.")
-      return
+  new_character = {
+    'first_name': first_name,
+    'last_name': last_name,
+    'skin': skin,
+    'level': level,
+    'hot': hot,
+    'cold': cold,
+    'volatile': volatile,
+    'dark': dark
+  }
+  add_new_character(new_character)
+  print(new_character)
+  # Send new character as a confirmation message #TODO: actually include stat block
+  await ctx.send("success!")
 
-    else:
-      # Extract values from args
-      first_name = args[0]
-      last_name = args[1]
-      skin = args[2]
-      level = int(args[3])
-      hot = int(args[4])
-      cold = int(args[5])
-      volatile = int(args[6])
-      dark = int(args[7])
+# Fetches the full list of player characters
+@bot.command(name='get_characters')
+async def get_characters(ctx):
+  characters = get_characters()
+  characters_list = []
+  for index, character in characters.iterrows():
+    character_info = (
+      f"""**{character.first_name} {character.last_name}** *{character.skin}* (level {character.level})
+      **Hot:** {character.hot}
+      **Cold:** {character.cold}
+      **Volatile:** {character.volatile}
+      **Dark:** {character.dark}\n\n""")
+    characters_list.append(character_info)
+  characters_string = "\n".join(characters_list)
 
-      new_character = {
-        'first_name': first_name,
-        'last_name': last_name,
-        'skin': skin,
-        'level': level,
-        'hot': hot,
-        'cold': cold,
-        'volatile': volatile,
-        'dark': dark
-      }
-      add_new_character(new_character)
-      print(new_character)
-      # Send new character as a confirmation message #TODO: actually include stat block
-      await message.channel.send("success!")
-
-  # Fetches the full list of player characters
-  if msg.startswith(prefix + "get_characters"):
-    characters = get_characters()
-    characters_list = []
-    for index, character in characters.iterrows():
-      character_info = (
-        f"""**{character.first_name} {character.last_name}** *{character.skin}* (level {character.level})
-          **Hot:** {character.hot}
-          **Cold:** {character.cold}
-          **Volatile:** {character.volatile}
-          **Dark:** {character.dark}\n\n""")
-      characters_list.append(character_info)
-    characters_string = "\n".join(characters_list)
-
-    await message.channel.send("List of Player Characters: \n\n" +
-                               characters_string +
-                               "\n \n (to view npcs, use command " + prefix +
-                               "get_npcs")
+  await ctx.send("List of Player Characters: \n\n" +
+                 characters_string +
+                 "\n *(note: to view npcs, use command " + prefix +
+                 "get_npcs)*")
 
   # see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier. TODO: doesn't handle wrong names yet
-  if msg.startswith(prefix + "stat_block"):
-    name = message.content[len(prefix + "stat_block"):].strip()
+
+@bot.command()
+async def stat_block(ctx, *, name):
     character = get_character_stats(name)
     character_stats_message = (
-      f"""**{character['first_name'].iloc[0]} {character['last_name'].iloc[0]}** *{character['skin'].iloc[0]}* (level {character['level'].iloc[0]})
-          **Hot:** {character['hot'].iloc[0]}
-          **Cold:** {character['cold'].iloc[0]}
-          **Volatile:** {character['volatile'].iloc[0]}
-          **Dark:** {character['dark'].iloc[0]}""")
+        f"""**{character['first_name'].iloc[0]} {character['last_name'].iloc[0]}** *{character['skin'].iloc[0]}* (level {character['level'].iloc[0]})
+            **Hot:** {character['hot'].iloc[0]}
+            **Cold:** {character['cold'].iloc[0]}
+            **Volatile:** {character['volatile'].iloc[0]}
+            **Dark:** {character['dark'].iloc[0]}""")
+    await ctx.send(character_stats_message)
 
-    await message.channel.send(character_stats_message)
+@bot.command()
+async def hello(ctx):
+    await ctx.send("Hello, world! This will eventually be updated with instructions on how to get instructions!")
 
-  # TODO: reformat this to have instructions
-  if msg.startswith(prefix + "hello"):
-    await message.channel.send(
-      "Hello, world! This will eventually be updated with instructions on how to get instructions!"
-    )
 
 
 #Rolling function
 
-client.run(os.getenv('TOKEN'))
+bot.run(os.getenv('TOKEN'))

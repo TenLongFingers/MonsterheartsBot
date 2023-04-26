@@ -1,3 +1,5 @@
+# TODO: give IDs for which server it came from
+
 import os
 
 import pandas as pd
@@ -6,10 +8,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-#PERMISSIONS
+#engines and permissions
 CONNECTION_STRING = os.environ['CONNECTION_STRING']
+engine = create_engine(CONNECTION_STRING, isolation_level="AUTOCOMMIT")
 
-engine = create_engine(CONNECTION_STRING, isolation_level="AUTOCOMMIT", pool_pre_ping=True)
+#variables
+
 
 # Gets all characters and their stat block
 def get_characters():
@@ -40,18 +44,20 @@ def get_character_stats(name):
     )
 
 
-# Add new character
-def add_new_character(character):
+# Add new character 
+#TODO: technically they should only be adding a level 1 character. Make the default level 1. 
+#TODO: Add a real error message
+def add_new_character(character, server_id):
   try:
     with engine.connect() as conn:
       conn.execute(
         text('''
-                INSERT INTO characters (first_name, last_name, skin, level, hot, cold, volatile, dark)
-                VALUES (:first_name, :last_name, :skin, :level, :hot, :cold, :volatile, :dark)
+                INSERT INTO characters (id, first_name, last_name, skin, level, hot, cold, volatile, dark, server_id)
+                VALUES (DEFAULT, :first_name, :last_name, :skin, :level, :hot, :cold, :volatile, :dark, :server_id)
             '''), character)
     return True
   except SQLAlchemyError:
     print(
-      f"Error: couldn't find {character['first_name']} in character list. Please check to make sure your spelling is correct."
+      f"Error: character not created. Add something helpful for the user here"
     )
     return False
