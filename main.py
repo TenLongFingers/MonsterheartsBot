@@ -64,28 +64,28 @@ async def on_message(message):
         "Usage: !new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. **Remember not to use comas!** \n Note: if you are trying to add a new NPC, use "
         + prefix + "new_npc instead.")
       return
-      
+
     else:
       # Extract values from args
       first_name = args[0]
       last_name = args[1]
       skin = args[2]
-      level = args[3]
-      hot = args[4]
-      cold = args[5]
-      volatile = args[6]
-      dark = args[7]
-      
+      level = int(args[3])
+      hot = int(args[4])
+      cold = int(args[5])
+      volatile = int(args[6])
+      dark = int(args[7])
+
       new_character = {
-    'first_name': first_name,
-    'last_name': last_name,
-    'skin': skin,
-    'level': level,
-    'hot': hot,
-    'cold': cold,
-    'volatile': volatile,
-    'dark': dark
-}
+        'first_name': first_name,
+        'last_name': last_name,
+        'skin': skin,
+        'level': level,
+        'hot': hot,
+        'cold': cold,
+        'volatile': volatile,
+        'dark': dark
+      }
       add_new_character(new_character)
       print(new_character)
       # Send new character as a confirmation message #TODO: actually include stat block
