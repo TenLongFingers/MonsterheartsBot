@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 import string
-from custom_modules.database_functions import get_characters, get_character_stats, add_new_character
+from custom_modules.database_functions import fetch_characters_from_db, get_character_stats, add_new_character
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -56,14 +56,15 @@ async def new_character(ctx):
   #remove bot command
   input_string = ctx.message.content.lower().split()
   args = input_string[1:]
-  #sanitize
+  args.append(str(server_id))
+  #sanitize TODO: NEGATIVES ARE REMOVED!!!! We want negative stats in this household!!
   sanitized_character = "".join(ch for ch in " ".join(args)
                                 if ch.isalnum() or ch.isspace())
 
   # dictioanry for new character
   keys = [
     'first_name', 'last_name', 'skin', 'level', 'hot', 'cold', 'volatile',
-    'dark'
+    'dark', 'server_id'
   ]
   values = sanitized_character.split()
 
@@ -77,39 +78,41 @@ async def new_character(ctx):
   new_character['cold'] = int(new_character['cold'])
   new_character['volatile'] = int(new_character['volatile'])
   new_character['dark'] = int(new_character['dark'])
+  new_character['server_id'] = str(new_character['server_id'])
 
   # Parse name, stat, and level arguments
 
   # #check to see if input is valid
   # if len([ctx, first_name, last_name, skin, level, hot, cold, volatile, dark
-  #         ]) != 8:
+  #         ]) != 9:
   #   await ctx.send(
   #     f"Usage: {prefix}new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. \n Note: if you are trying to add a new NPC, use {prefix}new_npc instead."
   #   )
   #   return
 
-  result = (add_new_character(new_character, server_id))
-  print(new_character)
+  result = (add_new_character(new_character))
+
   # Send new character as a confirmation message
   #TODO: actually include stat block TODO: add a more helpful error message
   if result:
     await ctx.send("success!")
   else:
     await ctx.send("fail")
-  print(args, input_string, sanitized_character)
+  print(
+    f'''\n\n args: {args} \n \n input_string: {input_string} \n \n sanitized_character: {sanitized_character} \n \n server_id: {server_id}'''
+  )
 
 
-# Fetches the full list of player characters
 @bot.command(name='character_list')
-#Get server ID from discord API
+# Get server ID from Discord API
 async def get_characters(ctx):
 
   # get server ID from discord
   server_id = ctx.guild.id
 
-  characters = get_characters(server_id)
+  characters = fetch_characters_from_db(server_id)
 
-  if characters:
+  if not characters.empty:
     characters_list = []
     for index, character in characters.iterrows():
       character_info = (
@@ -122,12 +125,14 @@ async def get_characters(ctx):
     characters_string = "\n".join(characters_list)
 
     await ctx.send("List of Player Characters: \n\n" + characters_string +
-                   "\n *(note: to view npcs, use command " + command_prefix +
+                   "\n *(note: to view npcs, use command " + prefix +
                    "get_npcs)*")
   else:
-    await ctx.send("Failed. TODO: add a more helpful error message")
+    await ctx.send("Failed to retrieve character data. Please try again later."
+                   )
 
-  # see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier. TODO: doesn't handle wrong names yet
+
+# see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier. TODO: doesn't handle wrong names yet
 
 
 @bot.command()

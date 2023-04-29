@@ -16,14 +16,13 @@ engine = create_engine(CONNECTION_STRING, isolation_level="AUTOCOMMIT")
 
 
 # Gets all characters and their stat block
-def get_characters(server_id):
-  sql = '''
-    SELECT *
-    FROM "characters"
-    WHERE server_id = :server_id;
-    '''
+def fetch_characters_from_db(server_id):
+  sql = text("SELECT * FROM characters WHERE server_id = :server_id")
   with engine.connect() as conn:
-    df = pd.read_sql(sql, conn)
+    result = conn.execute(sql, {"server_id": str(server_id)})
+    rows = result.fetchall()
+
+  df = pd.DataFrame(rows, columns=result.keys())
   return df
 
 
@@ -48,16 +47,15 @@ def get_character_stats(name, server_id):
 # Add new character
 #TODO: technically they should only be adding a level 1 character. Make the default level 1.
 #TODO: Add a real error message
-def add_new_character(character, server_id):
+def add_new_character(character):
   try:
     with engine.connect() as conn:
       conn.execute(
         text('''
-                INSERT INTO characters (id, first_name, last_name, skin, level, hot, cold, volatile, dark, server_id)
-                VALUES (DEFAULT, :first_name, :last_name, :skin, :level, :hot, :cold, :volatile, :dark, :server_id)
+                INSERT INTO characters (first_name, last_name, skin, level, hot, cold, volatile, dark, id, server_id)
+                VALUES (:first_name, :last_name, :skin, :level, :hot, :cold, :volatile, :dark, DEFAULT, :server_id)
             '''), character)
     return True
   except SQLAlchemyError:
-    print(
-      "Error: character not created. Add something helpful for the user here")
+    print("Error: character not created.")
     return False
