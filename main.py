@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 import string
-from custom_modules.database_functions import fetch_characters_from_db, get_character_stats, add_new_character
+from custom_modules.database_functions import fetch_characters_from_db, get_character_stats, add_new_character, delete_character_db
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -80,13 +80,11 @@ async def new_character(ctx):
   new_character['dark'] = int(new_character['dark'])
   new_character['server_id'] = str(new_character['server_id'])
 
-  # Parse name, stat, and level arguments
-
   # #check to see if input is valid
   # if len([ctx, first_name, last_name, skin, level, hot, cold, volatile, dark
   #         ]) != 9:
   #   await ctx.send(
-  #     f"Usage: {prefix}new_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. \n Note: if you are trying to add a new NPC, use {prefix}new_npc instead."
+  #     f"Usage: {prefix}add_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. \n Note: if you are trying to add a new NPC, use {prefix}new_npc instead."
   #   )
   #   return
 
@@ -135,12 +133,22 @@ async def get_characters(ctx):
 # see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier. TODO: doesn't handle wrong names yet
 
 
-@bot.command()
-async def stat_block(ctx, *, name):
+@bot.command(name='statblock')
+async def stat_block(ctx):
   # get server ID from discord
   server_id = ctx.guild.id
+  # extract name
+  input_string = ctx.message.content.lower().split()
+  name = ' '.join(input_string[1:]).capitalize()
 
-  character = get_character_stats(name)
+  character = get_character_stats(name, server_id)
+
+  if character is None:
+    await ctx.send(
+      f"Error: couldn't find {name} in character list. Please check to make sure your spelling is correct."
+    )
+    return
+
   character_stats_message = (
     f"""**{character['first_name'].iloc[0]} {character['last_name'].iloc[0]}** *{character['skin'].iloc[0]}* (level {character['level'].iloc[0]})
             **Hot:** {character['hot'].iloc[0]}
@@ -150,7 +158,23 @@ async def stat_block(ctx, *, name):
   await ctx.send(character_stats_message)
 
 
-@bot.command()
+# Delete character
+@bot.command(name='delete_character')
+async def delete_character(ctx):
+  #get server_id
+  server_id = ctx.guild.id
+  #remove bot command
+  input_string = ctx.message.content.lower().split()
+  name = ' '.join(input_string[1:]).capitalize()
+
+  if delete_character_db(name, server_id):
+    await ctx.send(f'''{name} has been deleted from the character list.''')
+  else:
+    await ctx.send(f'''Error: {name} not found. No one's been deleted.''')
+
+
+#hello message
+@bot.command(name='hello')
 async def hello(message):
   await message.channel.send(
     "Hello, world! This will eventually be updated with instructions on how to get instructions!"

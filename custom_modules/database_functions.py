@@ -29,19 +29,29 @@ def fetch_characters_from_db(server_id):
 # Gets single character stat block
 # TODO: error message doesn't print. Probably needs to be handled on main, anyway
 def get_character_stats(name, server_id):
-  sql = text('''
-    SELECT *
-    FROM "characters"
-    WHERE "first_name" = :name AND server_id = :server_id;
-    ''')
+  sql = text(
+    "SELECT first_name, last_name, skin, hot, cold, volatile, dark, level FROM characters WHERE first_name = :name AND server_id = :server_id"
+  )
+  print(sql)
   try:
     with engine.connect() as conn:
-      df = pd.read_sql(sql, conn, params={'name': name})
-    return df
+      df = conn.execute(sql, {
+        "name": name,
+        "server_id": str(server_id)
+      }).fetchall()
+      print(df)
+
+    if not df:
+      return None
+
+    return pd.DataFrame(df,
+                        columns=[
+                          "first_name", "last_name", "skin", "hot", "cold",
+                          "volatile", "dark", "level"
+                        ])
+
   except NoResultFound:
-    print(
-      f"Error: couldn't find {name} in character list. Please check to make sure your spelling is correct."
-    )
+    return None
 
 
 # Add new character
@@ -58,4 +68,18 @@ def add_new_character(character):
     return True
   except SQLAlchemyError:
     print("Error: character not created.")
+    return False
+
+
+#Delete character
+def delete_character_db(name, server_id):
+  try:
+    with engine.connect() as conn:
+      sql = text(
+        '''DELETE FROM characters WHERE server_id = :server_id AND first_name = :name
+            ''')
+      conn.execute(sql, {"name": name, "server_id": str(server_id)})
+    return True
+  except SQLAlchemyError:
+    print("Error: character not found")
     return False
