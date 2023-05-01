@@ -57,9 +57,9 @@ async def new_character(ctx):
   input_string = ctx.message.content.lower().split()
   args = input_string[1:]
   args.append(str(server_id))
-  #sanitize TODO: NEGATIVES ARE REMOVED!!!! We want negative stats in this household!!
+  #sanitize
   sanitized_character = "".join(ch for ch in " ".join(args)
-                                if ch.isalnum() or ch.isspace())
+                                if ch.isalnum() or ch.isspace() or ch == "-")
 
   # dictioanry for new character
   keys = [
@@ -80,13 +80,12 @@ async def new_character(ctx):
   new_character['dark'] = int(new_character['dark'])
   new_character['server_id'] = str(new_character['server_id'])
 
-  # #check to see if input is valid
-  # if len([ctx, first_name, last_name, skin, level, hot, cold, volatile, dark
-  #         ]) != 9:
-  #   await ctx.send(
-  #     f"Usage: {prefix}add_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. \n Note: if you are trying to add a new NPC, use {prefix}new_npc instead."
-  #   )
-  #   return
+  #check to see if input is valid
+  if len(args) != 9:
+    await ctx.send(
+      f"No new character has been made. Make sure you're putting it in the right order. \n Usage: {prefix}add_character <first name> <last name> <skin> <level> <hot> <cold> <volatile> <dark>. \n Note: if you are trying to add a new NPC, use {prefix}new_npc instead."
+    )
+    return
 
   result = (add_new_character(new_character))
 
@@ -96,9 +95,6 @@ async def new_character(ctx):
     await ctx.send("success!")
   else:
     await ctx.send("fail")
-  print(
-    f'''\n\n args: {args} \n \n input_string: {input_string} \n \n sanitized_character: {sanitized_character} \n \n server_id: {server_id}'''
-  )
 
 
 @bot.command(name='character_list')
@@ -130,9 +126,7 @@ async def get_characters(ctx):
                    )
 
 
-# see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier. TODO: doesn't handle wrong names yet
-
-
+# see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier.
 @bot.command(name='statblock')
 async def stat_block(ctx):
   # get server ID from discord
@@ -145,7 +139,7 @@ async def stat_block(ctx):
 
   if character is None:
     await ctx.send(
-      f"Error: couldn't find {name} in character list. Please check to make sure your spelling is correct."
+      f"Error: couldn't find {name} in character list. Did you spell it right? :thinking:"
     )
     return
 
@@ -173,13 +167,31 @@ async def delete_character(ctx):
     await ctx.send(f'''Error: {name} not found. No one's been deleted.''')
 
 
-#hello message
-@bot.command(name='hello')
-async def hello(message):
-  await message.channel.send(
-    "Hello, world! This will eventually be updated with instructions on how to get instructions!"
-  )
+# #add conditions
+@bot.command(name='add_conditon')
+async def add_condition(ctx):
+  #get server_id
+  server_id = ctx.guild.id
+  #remove bot command
+  input_string = ctx.message.content.lower().split()
+  args = input_string[1:]
+  args.append(str(server_id))
+  #sanitize
+  sanitized_condition = "".join(ch for ch in " ".join(args)
+                                if ch.isalnum() or ch.isspace())
 
+  #dictionary for new condition
+  keys = [
+    'first_name'
+  ]
+
+
+# #hello message
+# @bot.command(name='hello')
+# async def hello(message):
+#   await message.channel.send(
+#     "Hello, world! This will eventually be updated with instructions on how to get instructions!"
+#   )
 
 #Rolling function
 
