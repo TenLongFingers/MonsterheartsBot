@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 import string
-from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler
+from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler, get_conditions_handler
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -39,6 +39,14 @@ class Character:
     self.cold = cold
     self.volatile = volatile
     self.dark = dark
+
+
+class Condition:
+
+  def __init__(self, first_name, last_name, condition):
+    self.first_name = first_name
+    self.last_name = last_name
+    self.condition = condition
 
 
 # Check to see if the bot is logged in. Dev use only
@@ -174,7 +182,7 @@ async def delete_character(ctx):
 @bot.command(name='add_condition')
 async def add_condition(ctx):
   # Get server_id
-  server_id = str(ctx.guild.id)
+  server_id = ctx.guild.id
 
   # Parse input
   input_string = ctx.message.content.lower().split()
@@ -197,6 +205,32 @@ async def add_condition(ctx):
     await ctx.send(
       f'''Something went wrong. The condition "{condition}" hasn\'t been added to {name}\'s condition list.'''
     )
+
+
+#Get all the conditions for a character TODO: add a different message if the handler function returns None
+@bot.command(name='see_conditions')
+async def get_conditions(ctx):
+  #get server id
+  server_id = str(ctx.guild.id)
+  #extract name
+  input_string = ctx.message.content.lower().split()
+  name = ' '.join(input_string[1:]).capitalize()
+
+  character_conditions = get_conditions_handler(name, server_id)
+
+  if character_conditions[0] is None:
+    await ctx.send(
+      f'''Error: couldn't find {name} in character list. Did you spell it right? :thinking:'''
+    )
+    return
+
+  character_conditions_message = f'''
+  **{character_conditions[0]} {character_conditions[1]}'s conditions:\n**'''
+  for condition in character_conditions[2]:
+    character_conditions_message += f'''-{condition}\n'''
+
+  await ctx.send(character_conditions_message)
+
 
 
 # #hello message

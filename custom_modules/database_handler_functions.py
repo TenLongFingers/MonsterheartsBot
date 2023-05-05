@@ -128,5 +128,34 @@ def add_condition_handler(name, server_id, condition):
     return False
 
 
-# #get condition
-# def get_condition_db(df, columns = "first_name", "last_name", "condition"):
+#get conditions
+def get_conditions_handler(name, server_id):
+  with engine.connect() as conn:
+    result = conn.execute(
+      text(
+        "SELECT characters.id, first_name, last_name FROM characters "
+        "JOIN conditions "
+        "ON characters.id = conditions.id "
+        "WHERE characters.first_name = :name AND characters.server_id = :server_id "
+      ), {
+        "name": name,
+        "server_id": server_id
+      })
+    rows = result.fetchall()
+    if rows:
+      conditions_arr = []
+      for row in rows:
+        id, first_name, last_name = row
+        if id not in conditions_arr:
+          conditions_arr.append(id)
+      # extract conditions
+      conditions = []
+      for condition_id in conditions_arr:
+        sql = text("SELECT condition FROM conditions WHERE id = :id")
+        with engine.connect() as conn:
+          result = conn.execute(sql, {"id": condition_id})
+          for row in result:
+            conditions.append(row[0])
+      return (first_name, last_name, conditions, True)
+    else:
+      return (None, None, None, False)
