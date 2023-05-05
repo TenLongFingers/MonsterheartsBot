@@ -159,3 +159,35 @@ def get_conditions_handler(name, server_id):
       return (first_name, last_name, conditions, True)
     else:
       return (None, None, None, False)
+
+
+#DELETE CONDITIONS
+def delete_condition_handler(name, condition, server_id):
+  try:
+    with engine.connect() as conn:
+      #find character's ID
+      sql_select = text(
+        "SELECT id FROM characters WHERE server_id = :server_id AND first_name = :name"
+      )
+      result_select = conn.execute(sql_select, {
+        "name": name,
+        "server_id": str(server_id)
+      })
+      character_id = result_select.fetchone()
+      if character_id is None:
+        return False
+
+      #delete condition
+      sql_delete = text(
+        "DELETE FROM conditions WHERE id = :id AND condition = :condition")
+      result_delete = conn.execute(sql_delete, {
+        "id": character_id[0],
+        "condition": condition
+      })
+
+      if result_delete.rowcount > 0:
+        return True
+      else:
+        return False
+  except SQLAlchemyError:
+    print("Error: condition not deleted")

@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 import string
-from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler, get_conditions_handler
+from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler, get_conditions_handler, delete_condition_handler
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -231,6 +231,26 @@ async def get_conditions(ctx):
 
   await ctx.send(character_conditions_message)
 
+
+@bot.command(name="resolve_condition")
+async def delete_condition(ctx):
+  # get server id
+  server_id = ctx.guild.id
+  # remove bot command
+  input_string = ctx.message.content.lower().split()
+  name = input_string[1].capitalize()
+  condition = ' '.join(input_string[2:]).capitalize()
+
+  # call the handler function and get the result
+  result = delete_condition_handler(name, condition, server_id)
+
+  if result:
+    await ctx.send(
+      f'''{name} has resolved the "{condition}" condition. It can no long be exploited.'''
+    )
+  else:
+    await ctx.send(
+      f'''"{name}" failed to resolve the "{condition}" condition.''')
 
 
 # #hello message
