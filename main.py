@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 import string
-from custom_modules.database_functions import fetch_characters_from_db, get_character_stats, add_new_character, delete_character_db
+from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -48,7 +48,7 @@ async def on_ready():
 
 
 # create new character function
-@bot.command(name='add_character')
+@bot.command(name='new_character')
 async def new_character(ctx):
   #Get server ID from discord API
   server_id = ctx.guild.id
@@ -87,24 +87,26 @@ async def new_character(ctx):
     )
     return
 
-  result = (add_new_character(new_character))
+  result = (new_character_handler(new_character))
 
   # Send new character as a confirmation message
   #TODO: actually include stat block TODO: add a more helpful error message
   if result:
-    await ctx.send("success!")
+    await ctx.send(
+      f'''{new_character['first_name']} {new_character['last_name']} the {new_character['skin']} has been added to the game!'''
+    )
   else:
     await ctx.send("fail")
 
 
 @bot.command(name='character_list')
 # Get server ID from Discord API
-async def get_characters(ctx):
+async def character_list(ctx):
 
   # get server ID from discord
   server_id = ctx.guild.id
 
-  characters = fetch_characters_from_db(server_id)
+  characters = character_list_handler(server_id)
 
   if not characters.empty:
     characters_list = []
@@ -127,15 +129,15 @@ async def get_characters(ctx):
 
 
 # see a single character's stats function TODO: for now I repeat the formatting. I'll consolidate that later, once I know everything works and I can isolate problems easier.
-@bot.command(name='statblock')
-async def stat_block(ctx):
+@bot.command(name='character_sheet')
+async def character_sheet(ctx):
   # get server ID from discord
   server_id = ctx.guild.id
   # extract name
   input_string = ctx.message.content.lower().split()
   name = ' '.join(input_string[1:]).capitalize()
 
-  character = get_character_stats(name, server_id)
+  character = character_sheet_handler(name, server_id)
 
   if character is None:
     await ctx.send(
@@ -161,29 +163,40 @@ async def delete_character(ctx):
   input_string = ctx.message.content.lower().split()
   name = ' '.join(input_string[1:]).capitalize()
 
-  if delete_character_db(name, server_id):
-    await ctx.send(f'''{name} has been deleted from the character list.''')
+  if delete_character_handler(name, server_id):
+    await ctx.send(
+      f'''{name} has been removed from the game. Goodbye, {name}.''')
   else:
     await ctx.send(f'''Error: {name} not found. No one's been deleted.''')
 
 
-# #add conditions
-@bot.command(name='add_conditon')
+#add conditions
+@bot.command(name='add_condition')
 async def add_condition(ctx):
-  #get server_id
-  server_id = ctx.guild.id
-  #remove bot command
+  # Get server_id
+  server_id = str(ctx.guild.id)
+
+  # Parse input
   input_string = ctx.message.content.lower().split()
   args = input_string[1:]
-  args.append(str(server_id))
-  #sanitize
-  sanitized_condition = "".join(ch for ch in " ".join(args)
+  first_name = args[0]
+  condition = " ".join(args[1:])
+
+  # Sanitize input
+  sanitized_condition = "".join(ch for ch in condition
                                 if ch.isalnum() or ch.isspace())
 
-  #dictionary for new condition
-  keys = [
-    'first_name'
-  ]
+  # Capitalize name and condition
+  name = first_name.capitalize()
+  condition = sanitized_condition.capitalize()
+
+  # Add condition to database
+  if add_condition_handler(name, server_id, condition):
+    await ctx.send(f'''{name} has a new condition to exploit! "{condition}"''')
+  else:
+    await ctx.send(
+      f'''Something went wrong. The condition "{condition}" hasn\'t been added to {name}\'s condition list.'''
+    )
 
 
 # #hello message

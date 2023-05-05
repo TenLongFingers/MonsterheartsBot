@@ -14,7 +14,7 @@ engine = create_engine(CONNECTION_STRING, isolation_level="AUTOCOMMIT")
 
 
 # Gets all characters and their stat block
-def fetch_characters_from_db(server_id):
+def character_list_handler(server_id):
   sql = text("SELECT * FROM characters WHERE server_id = :server_id")
   with engine.connect() as conn:
     result = conn.execute(sql, {"server_id": str(server_id)})
@@ -25,8 +25,7 @@ def fetch_characters_from_db(server_id):
 
 
 # Gets single character stat block
-# TODO: error message doesn't print. Probably needs to be handled on main, anyway
-def get_character_stats(name, server_id):
+def character_sheet_handler(name, server_id):
   sql = text(
     "SELECT first_name, last_name, skin, hot, cold, volatile, dark, level FROM characters WHERE first_name = :name AND server_id = :server_id"
   )
@@ -52,7 +51,7 @@ def get_character_stats(name, server_id):
 
 # Add new character
 #TODO: technically they should only be adding a level 1 character. Make the default level 1.
-def add_new_character(character):
+def new_character_handler(character):
   sql = '''
                 INSERT INTO characters (first_name, last_name, skin, level, hot, cold, volatile, dark, id, server_id)
                 VALUES (:first_name, :last_name, :skin, :level, :hot, :cold, :volatile, :dark, DEFAULT, :server_id)
@@ -68,7 +67,7 @@ def add_new_character(character):
 
 
 # Delete character and their associated conditions
-def delete_character_db(name, server_id):
+def delete_character_handler(name, server_id):
   try:
     with engine.connect() as conn:
       # Find the character's ID
@@ -87,7 +86,6 @@ def delete_character_db(name, server_id):
       sql_delete = text('''DELETE FROM conditions WHERE id = :id; \
                 DELETE FROM characters WHERE id = :id;''')
       result_delete = conn.execute(sql_delete, {"id": character_id[0]})
-      print(sql_delete, sql_select, name, server_id, id)
 
       if result_delete.rowcount > 0:
         return True
@@ -99,22 +97,35 @@ def delete_character_db(name, server_id):
     return False
 
 
-#add condition
-def add_condition_db(name, server_id, condition):
-  sql = text(
-    "SELECT first_name, last_name, condition, server_id FROM conditions WHERE first_name = :name AND server_id = :server_id"
-  )
+# add condition
+def add_condition_handler(name, server_id, condition):
   try:
+    # get character id
     with engine.connect() as conn:
-      df = conn.execute(sql, {
-        "name": name,
-        "server_id": str(server_id)
-      }).fetchall()
-    if not df:
-      return None
-    return pd.DataFrame(df, columns=["first_name", "last_name", "condition"])
-  except NoResultFound:
-    return None
+      result = conn.execute(
+        text(
+          "SELECT id FROM characters WHERE first_name = :name AND server_id = :server_id"
+        ), {
+          "name": name,
+          "server_id": server_id
+        })
+      character_id = result.scalar()
+
+    # insert condition
+    with engine.connect() as conn:
+      conn.execute(
+        text(
+          "INSERT INTO conditions (id, condition) VALUES (:character_id, :condition)"
+        ), {
+          "character_id": character_id,
+          "condition": condition.capitalize()
+        })
+    return True
+  except SQLAlchemyError:
+    print(
+      f'''Error: Condition not added. Here's what the database_functions module tried to push to the database:\n \n \n name = {name} \n character_id = {character_id} \n id = {id} \n server_id = {server_id} \n condition = {condition}'''
+    )
+    return False
 
 
 # #get condition
