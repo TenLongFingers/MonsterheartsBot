@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 import string
-from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler, get_conditions_handler, delete_condition_handler, new_npc_handler
+from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler, get_conditions_handler, delete_condition_handler, new_npc_handler, delete_npc_handler
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -291,6 +291,39 @@ async def new_npc(ctx):
   else:
     await ctx.send(
       "Failed to add npc. Something must be wrong with my backend.")
+
+
+@bot.command(name="delete_npc")
+async def delete_npc(ctx):
+  # Get server_id
+  server_id = str(ctx.guild.id)
+
+  # Parse input
+  input_string = ctx.message.content.lower().split()
+  args = input_string[1:]
+
+  # Check if input is valid
+  if len(args) != 2:
+    await ctx.send("NPC not deleted. First *and* last name are required.")
+
+  # Sanitize input
+  sanitized_npc = " ".join(ch for ch in args
+                           if ch.isalnum() or ch.isspace() or ch == "-")
+
+  first_name, last_name = sanitized_npc.split(maxsplit=1)
+  first_name = first_name.capitalize()
+  last_name = last_name.capitalize()
+
+  if not sanitized_npc:
+    await ctx.send("Please enter the full name of the npc you want to remove.")
+
+  if delete_npc_handler(first_name, last_name, server_id):
+    await ctx.send(
+      f"{first_name} {last_name} has been removed from the npc list. I hope they're okay..."
+    )
+  else:
+    await ctx.send(
+      "Error: NPC not deleted. Something is wrong with the backend.")
 
 
 #@bot.command(name="give_string")

@@ -219,3 +219,29 @@ def new_npc_handler(first_name, last_name, server_id):
     print(
       f"ERROR: npc not added. Here's what SQLAlchemy sent to the database:\n \n {first_name} \n {last_name} \n {server_id}"
     )
+
+
+# DELETE NPCS
+def delete_npc_handler(first_name, last_name, server_id):
+  sql = '''
+  DELETE FROM npcs
+  WHERE first_name = :first_name AND last_name = :last_name AND server_id = :server_id
+  '''
+  try:
+    with engine.connect() as conn:
+      conn.execute(text(sql), {
+        "first_name": first_name,
+        "last_name": last_name,
+        "server_id": server_id
+      })
+    return True
+  except SQLAlchemyError:
+    raise Exception(
+      f'''Error in backend. Here's what it tried to pass to the database: \n {sql} \n {first_name} \n {last_name} \n {server_id}'''
+    )
+    return False
+  except DataError:
+    raise Exception("data error")
+  except IntegrityError:
+    raise Exception(
+      "integrity error ig idk why this would be the problem though")
