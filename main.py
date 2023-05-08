@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands
 import string
-from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler, get_conditions_handler, delete_condition_handler
+from custom_modules.database_handler_functions import character_list_handler, character_sheet_handler, new_character_handler, delete_character_handler, add_condition_handler, get_conditions_handler, delete_condition_handler, new_npc_handler
 
 ## DISCORD CLIENT INSTANCE ##
 intents = discord.Intents.default()
@@ -105,6 +105,9 @@ async def new_character(ctx):
     )
   else:
     await ctx.send("fail")
+    print(
+      f'''\n{result}\n {input_string}\n {sanitized_character}\n {new_character}'''
+    )
 
 
 @bot.command(name='character_list')
@@ -253,13 +256,49 @@ async def delete_condition(ctx):
       f'''"{name}" failed to resolve the "{condition}" condition.''')
 
 
-# #hello message
-# @bot.command(name='hello')
-# async def hello(message):
-#   await message.channel.send(
-#     "Hello, world! This will eventually be updated with instructions on how to get instructions!"
-#   )
+@bot.command(name="new_npc")
+async def new_npc(ctx):
+  # Get server_id
+  server_id = ctx.guild.id
 
-#Rolling function
+  # Parse input
+  input_string = ctx.message.content.lower().split()
+  args = input_string[1:]
+
+  #Check if input is valid
+  if len(args) != 2:
+    await ctx.send("NPC not created. First *and* last name are required.")
+
+  # Sanitize input
+  sanitized_npc = " ".join(ch for ch in args
+                           if ch.isalnum() or ch.isspace() or ch == "-")
+
+  first_name, last_name = sanitized_npc.split(maxsplit=1)
+  first_name = first_name.capitalize()
+  last_name = last_name.capitalize()
+
+  if not sanitized_npc:
+    await ctx.send(
+      "Please enter a vaild name. \n If your character has multiple first and last names, please hyphenate them so I know which names are the 'frist' and which names are 'last'."
+    )
+    return
+
+  if new_npc_handler(first_name, last_name, server_id):
+    await ctx.send(
+      f'''{first_name} {last_name} has been added to the npc list.''')
+    return
+
+  else:
+    await ctx.send(
+      "Failed to add npc. Something must be wrong with my backend.")
+
+
+#@bot.command(name="give_string")
+#@bot.command(name="use_string")
+
+#@bot.command(name="update_character") This should allow users to change any aspect. first name, last name, skin, level, or any stat.
+#@bot.command(name="update_npc") TODO: update new_npc command so they know they can change the first or last name later
+
+#Rolling functions
 
 bot.run(os.getenv('TOKEN'))

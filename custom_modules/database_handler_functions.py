@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 from sqlalchemy import create_engine, text, MetaData, Table
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError, DataError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -61,9 +61,17 @@ def new_character_handler(character):
       conn.execute(text(sql), character)
       print(sql)
     return True
-  except SQLAlchemyError:
-    print("Error: character not created.")
-    return False
+  except IntegrityError as e:
+    print(
+      f"Error: character not created due to an integrity error.\n{e}\n{character}\n{sql}"
+    )
+  except DataError as e:
+    print(
+      f"Error: character not created due to a data error.\n{e}\n{character}\n{sql}"
+    )
+  except SQLAlchemyError as e:
+    print(f"Error: character not created.\n{e}\n{character}\n{sql}")
+  return False
 
 
 # Delete character and their associated conditions
@@ -107,7 +115,7 @@ def add_condition_handler(name, server_id, condition):
           "SELECT id FROM characters WHERE first_name = :name AND server_id = :server_id"
         ), {
           "name": name,
-          "server_id": server_id
+          "server_id": str(server_id)
         })
       character_id = result.scalar()
 
@@ -191,3 +199,23 @@ def delete_condition_handler(name, condition, server_id):
         return False
   except SQLAlchemyError:
     print("Error: condition not deleted")
+
+
+#ADD NPCS
+def new_npc_handler(first_name, last_name, server_id):
+  sql = '''
+  INSERT INTO npcs (first_name, last_name, server_id)
+  VALUES (:first_name, :last_name, :server_id)'''
+
+  try:
+    with engine.connect() as conn:
+      conn.execute(text(sql), {
+        "first_name": first_name,
+        "last_name": last_name,
+        "server_id": server_id
+      })
+    return True
+  except SQLAlchemyError:
+    print(
+      f"ERROR: npc not added. Here's what SQLAlchemy sent to the database:\n \n {first_name} \n {last_name} \n {server_id}"
+    )
